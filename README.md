@@ -21,7 +21,7 @@ The extension has four layers of checks.
 | `[L1]` | Well-formedness    | Is it parseable JSON?                                            |
 | `[L2]` | Spec conformance   | Does it match the Presentation API structure (2.1, 3.0, or 4.0)? |
 | `[L3]` | Linking            | Do referenced URLs resolve?                                      |
-| `[L4]` | Best-practice lint | Valid but ill-advised?                                           |
+| `[L4]` | Best-practice lint | Valid with recommendations                                       |
 
 ## Install
 

@@ -286,6 +286,26 @@
         <li>Paste the manifest JSON directly into the box below.</li>
       </ul>
       <p>Then click <strong>Validate</strong> to check it.</p>
+      <hr />
+      <p class="layers-title">Validation Levels:</p>
+      <dl class="layers">
+        <div class="finding level">
+          <dt>[L1]</dt>
+          <dd>Is it parseable JSON?</dd>
+        </div>
+        <div class="finding level">
+          <dt>[L2]</dt>
+          <dd>Does it match the IIIF structure?</dd>
+        </div>
+        <div class="finding level">
+          <dt>[L3]</dt>
+          <dd>Do referenced URLs resolve?</dd>
+        </div>
+        <div class="finding level">
+          <dt>[L4]</dt>
+          <dd>Valid with recommendations</dd>
+        </div>
+      </dl>
     </div>
   </div>
 </header>
@@ -491,6 +511,37 @@
     margin: 0;
     font-size: 14px;
     line-height: 1.5;
+  }
+  /* each level reuses the report's .finding tile, so the key looks like the rows it
+     explains - same monospace, padding, radius and spacing. the tint is the neutral
+     blue rather than a severity color: a level is a label, not a verdict. */
+  .layers {
+    margin: 0;
+  }
+  .finding.level {
+    background: var(--iiif-tint);
+    color: var(--iiif-blue-dark);
+  }
+  /* a short rule, not a full-width one - it separates the layer key from the
+     instructions without reading as the end of the popup. the rule and the heading
+     below it both mark the break, so neither needs much room of its own. */
+  .help-popup hr {
+    width: 40px;
+    margin: 10px 0;
+    border: 0;
+    border-top: 1px solid #ddd;
+  }
+  /* specificity has to beat ".help-popup p" above, which zeroes the margin. */
+  .help-popup .layers-title {
+    margin: 0 0 4px;
+    font-weight: 700;
+  }
+  /* the bracketed form the report itself prints in front of each finding. */
+  .layers dt {
+    flex-shrink: 0;
+  }
+  .layers dd {
+    margin: 0;
   }
   .panes {
     position: relative;
