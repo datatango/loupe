@@ -5,7 +5,9 @@
 // new Function, which the extension blocks. generating the validator ahead of time
 // produces plain JavaScript we can import like any other module — no eval needed.
 
-import Ajv from "ajv";
+// _ is Ajv's template tag for injecting code into the generated source (see the
+// formats option below).
+import Ajv, { _ } from "ajv";
 // v4's schema files declare draft 2020-12 ($schema: ".../2020-12/schema"), unlike v2/v3's
 // draft-07 - a different Ajv class is required to understand that dialect.
 import Ajv2020 from "ajv/dist/2020.js";
@@ -40,12 +42,24 @@ const schemaV2 = JSON.parse(
   readFileSync("schemas/presentation-2.schema.json", "utf8"),
 );
 
+// ajv-formats injects its format functions into the generated code as
+// `require("ajv-formats/dist/formats").fullFormats`, which is a ReferenceError in an ES
+// module. it only sets that default when code.formats is unset, so naming the object
+// here claims it first; the matching import is prepended to the output below.
+const esmFormats = _`fullFormats`;
+const esmFormatsImport = 'import { fullFormats } from "ajv-formats/dist/formats.js";\n';
+
 // allErrors: report every problem, not just the first.
 // code.source: keep the generated code so it can be exported as standalone source.
+// code.esm: emit "export const validateManifestV3 = ..." rather than CommonJS
+// "exports.validateManifestV3 = ...". package.json sets "type": "module", so the file
+// written below is loaded as an ES module either way - CJS content in it works only
+// because the production build's bundler papers over the mismatch, while Vite's dev
+// server serves the file as-is and fails on the missing named export.
 // strict: false - the official IIIF Presentation 3 schema uses "types"/"classes" as
 // custom definition containers (like $defs, just not named that), which Ajv's strict
 // mode flags as unknown keywords even though they're valid, inert JSON Schema.
-const ajv = new Ajv({ allErrors: true, code: { source: true }, strict: false });
+const ajv = new Ajv({ allErrors: true, code: { source: true, esm: true, formats: esmFormats }, strict: false });
 // both official schemas lean on format: "uri" / "date-time" throughout - without
 // ajv-formats registering what those words mean, Ajv silently skips them ("unknown
 // format ... ignored"), so e.g. "rights": "not a url" would pass unchecked.
@@ -65,7 +79,7 @@ const moduleSource = standaloneCode(ajv, {
 
 // write it out; workbench.js imports this file. the length log is a quick sanity check.
 console.log("Generated validator length:", moduleSource.length);
-writeFileSync("manifest-validator.js", moduleSource);
+writeFileSync("manifest-validator.js", esmFormatsImport + moduleSource);
 console.log("Wrote manifest-validator.js");
 
 // --- Presentation 4 ---
@@ -80,7 +94,7 @@ console.log("Wrote manifest-validator.js");
 // generation names its internal variables per Ajv instance (schema11, validate10, ...),
 // and two independently generated blobs sharing one file risk colliding on those names.
 const schemaV4Directory = "schemas/presentation-4";
-const ajv2020 = new Ajv2020({ allErrors: true, code: { source: true }, strict: false });
+const ajv2020 = new Ajv2020({ allErrors: true, code: { source: true, esm: true, formats: esmFormats }, strict: false });
 addFormats(ajv2020);
 for (const fileName of readdirSync(schemaV4Directory)) {
   const schema = JSON.parse(readFileSync(`${schemaV4Directory}/${fileName}`, "utf8"));
@@ -98,5 +112,5 @@ const schemaV4Id = "https://iiif.io/api/presentation/4.0/schema/Manifest.json";
 const moduleSourceV4 = standaloneCode(ajv2020, { validateManifestV4: schemaV4Id });
 
 console.log("Generated v4 validator length:", moduleSourceV4.length);
-writeFileSync("manifest-validator-v4.js", moduleSourceV4);
+writeFileSync("manifest-validator-v4.js", esmFormatsImport + moduleSourceV4);
 console.log("Wrote manifest-validator-v4.js");
